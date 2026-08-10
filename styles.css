@@ -182,14 +182,38 @@ main.wrap { padding-top: 18px; padding-bottom: 40px; }
 .modal-backdrop { position: absolute; inset: 0; background: rgba(8,44,71,.5); }
 .modal-card {
   position: relative; background: #fff; width: 100%; max-width: 480px; border-radius: 18px 18px 0 0;
-  padding: 22px 20px calc(22px + env(safe-area-inset-bottom)); box-shadow: 0 -4px 24px rgba(0,0,0,.2);
+  box-shadow: 0 -4px 24px rgba(0,0,0,.2);
   animation: slideUp .2s ease;
+  /* Cap height to the viewport and let the body scroll, so the header +
+     close button stay visible no matter how many names are listed. */
+  display: flex; flex-direction: column;
+  max-height: 85vh;
+  max-height: 85dvh;
+  overflow: hidden; /* clip the scroll area to the rounded corners */
 }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-.modal-close { position: absolute; top: 12px; right: 14px; background: none; border: none; font-size: 1.8rem; line-height: 1; color: var(--grey); cursor: pointer; }
-.modal-card h3 { margin: 0 26px 4px 0; color: var(--navy); }
+/* Never rely on the animation for final position: if motion is reduced (or the
+   animation can't run), the card must still rest in its visible spot. */
+@media (prefers-reduced-motion: reduce) {
+  .modal-card { animation: none; }
+}
+.modal-close {
+  position: absolute; top: 10px; right: 10px; z-index: 2;
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  background: none; border: none; font-size: 1.8rem; line-height: 1; color: var(--grey); cursor: pointer;
+  border-radius: 50%;
+}
+.modal-close:hover, .modal-close:focus-visible { background: var(--ice); outline: none; }
+.modal-card h3 { flex: 0 0 auto; margin: 0; padding: 20px 52px 6px 20px; color: var(--navy); }
+.modal-body {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 0 20px calc(20px + env(safe-area-inset-bottom));
+}
 .modal-sub { color: var(--grey); font-size: .9rem; margin: 0 0 12px; }
-.mates-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.mates-list {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 4px;
+}
 .mates-list li { padding: 10px 12px; border-radius: 8px; background: #f6fafd; font-size: .98rem; }
 .mates-list li.me { background: var(--navy); color: #fff; font-weight: 700; }
 
