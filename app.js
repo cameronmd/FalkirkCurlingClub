@@ -1,6 +1,7 @@
-/* Falkirk Curling Club — My Fixtures
- * Fully client-side. Parses the "Rota by Player" grid spreadsheet,
- * lets a player see their games and export them to a calendar (.ics).
+/* Falkirk Curling Club — My Fixtures (UI glue)
+ * Fully client-side. Parsing lives in parser.js, fixture/marker logic in
+ * fixtures.js, and calendar (.ics) generation in calendar.js. This file wires
+ * those pure modules to the DOM.
  */
 (function () {
   'use strict';
@@ -8,17 +9,7 @@
   // ---------- Config ----------
   var STORAGE_KEY = 'fcc_rota_v1';
   var PLAYER_KEY = 'fcc_player_v1';
-  var DEFAULT_LOCATION = 'Falkirk Curling Club';
-  var GAME_DURATION_MIN = 120; // assumed length of a game
-  // Marker meaning within a fixture column
-  var MARKERS = {
-    x: { status: 'playing', label: 'Playing', playing: true },
-    sub: { status: 'sub', label: 'Sub (playing)', playing: true },
-    'n/a': { status: 'unavailable', label: 'Not available', playing: false },
-    na: { status: 'unavailable', label: 'Not available', playing: false },
-    d: { status: 'declined', label: 'Declined', playing: false },
-    '?': { status: 'awaiting', label: 'Awaiting response', playing: false }
-  };
+  var CAL_OPTS = { location: 'Falkirk Curling Club', durationMin: 120, alarmHours: 3 };
 
   // ---------- State ----------
   var state = {
@@ -28,6 +19,8 @@
     filters: { playing: true, unavailable: false, hidepast: true },
     meta: { fileName: '', season: '' }
   };
+
+  function model() { return { fixtures: state.fixtures, players: state.players }; }
 
   // ---------- DOM ----------
   var $ = function (id) { return document.getElementById(id); };
@@ -54,16 +47,8 @@
   };
 
   // ============================================================
-  //  MARKER / DISPLAY HELPERS
+  //  DISPLAY HELPERS
   // ============================================================
-
-  function markerInfo(raw) {
-    if (!raw) return { status: 'none', label: '', playing: false };
-    var key = raw.toString().trim().toLowerCase();
-    if (MARKERS[key]) return MARKERS[key];
-    // Unknown non-empty marker: treat as a note (assume playing).
-    return { status: 'other', label: raw, playing: true };
-  }
 
   var DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -84,6 +69,46 @@
   function startOfToday() {
     var n = new Date();
     return new Date(n.getFullYear(), n.getMonth(), n.getDate());
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  // ============================================================
+  //  DERIVED DATA (via pure modules)
+  // ============================================================
+
+  function currentGames() {
+    return FCCFixtures.playerGames(model(), state.selectedPlayer, state.filters, startOfToday());
+  }
+
+  function matesFor(fixture) {
+    return FCCFixtures.teammates(model(), fixture);
+  }
+
+  // Attach teammates to each game and hand to the calendar module.
+  function exportCalendar(games, filename) {
+    var withMates = games.map(function (g) {
+      return { fixture: g.fixture, info: g.info, mates: matesFor(g.fixture) };
+    });
+    var ics = FCCCalendar.buildCalendar(withMates, {
+      playerName: state.selectedPlayer || 'Fixtures',
+      location: CAL_OPTS.location,
+      durationMin: CAL_OPTS.durationMin,
+      alarmHours: CAL_OPTS.alarmHours
+    });
+    var blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
   }
 
   // ============================================================
@@ -120,49 +145,6 @@
   }
 
   // ============================================================
-  //  GAME LIST FOR SELECTED PLAYER
-  // ============================================================
-
-  function playerObj() {
-    return state.players.filter(function (p) { return p.name === state.selectedPlayer; })[0] || null;
-  }
-
-  function playerGames() {
-    var p = playerObj();
-    if (!p) return [];
-    var today = startOfToday();
-    var games = [];
-    state.fixtures.forEach(function (f) {
-      var raw = p.markers[f.col];
-      if (!raw) return;
-      var info = markerInfo(raw);
-      // Filters
-      if (info.playing && !state.filters.playing) return;
-      if (!info.playing && info.status === 'unavailable' && !state.filters.unavailable) return;
-      if (!info.playing && info.status !== 'unavailable') {
-        // declined / awaiting: show only if unavailable filter on
-        if (!state.filters.unavailable) return;
-      }
-      if (state.filters.hidepast && f.date && f.date < today) return;
-      games.push({ fixture: f, info: info });
-    });
-    games.sort(function (a, b) {
-      var da = a.fixture.date ? a.fixture.date.getTime() : Infinity;
-      var db = b.fixture.date ? b.fixture.date.getTime() : Infinity;
-      return da - db;
-    });
-    return games;
-  }
-
-  // Everyone marked as playing a given fixture
-  function teammates(fixture) {
-    return state.players.filter(function (p) {
-      var info = markerInfo(p.markers[fixture.col]);
-      return info.playing;
-    }).map(function (p) { return p.name; });
-  }
-
-  // ============================================================
   //  RENDERING
   // ============================================================
 
@@ -183,7 +165,7 @@
       return;
     }
 
-    var games = playerGames();
+    var games = currentGames();
     el.summarySection.hidden = false;
     renderSummary(games);
     renderGames(games);
@@ -254,15 +236,11 @@
       return;
     }
     el.emptyState.hidden = true;
-    var today = startOfToday();
     var html = games.map(function (g, i) {
       var f = g.fixture;
-      var isNext = g.info.playing && f.date && f.date >= today;
-      // mark only the first upcoming as "next"
-      var opp = f.opposition && f.opposition !== '-' ? f.opposition : (f.competition || 'Fixture');
-      var mates = teammates(f);
+      var opp = FCCCalendar.displayOpp(f);
+      var mates = matesFor(f);
       var canCal = g.info.playing && f.date && f.time;
-      var dateLabel = f.date ? fmtDate(f.date) : (f.rawDate || 'Date TBC');
       var timeLabel = f.time ? fmtTime(f.time) : 'Time TBC';
       return '' +
         '<article class="game-card status-' + g.info.status + '">' +
@@ -292,11 +270,10 @@
     }).join('');
     el.gamesSection.innerHTML = html;
 
-    // wire per-card buttons
     Array.prototype.forEach.call(el.gamesSection.querySelectorAll('[data-cal]'), function (btn) {
       btn.addEventListener('click', function () {
         var g = games[+btn.getAttribute('data-cal')];
-        downloadICS([g], icsFileName(g));
+        exportCalendar([g], FCCCalendar.eventFileName(g));
       });
     });
     Array.prototype.forEach.call(el.gamesSection.querySelectorAll('[data-mates]'), function (btn) {
@@ -308,8 +285,8 @@
   }
 
   function openTeamModal(fixture) {
-    var mates = teammates(fixture);
-    var opp = fixture.opposition && fixture.opposition !== '-' ? fixture.opposition : (fixture.competition || 'Fixture');
+    var mates = matesFor(fixture);
+    var opp = FCCCalendar.displayOpp(fixture);
     el.modalTitle.textContent = opp + (fixture.date ? ' — ' + fmtDate(fixture.date) : '');
     el.modalBody.innerHTML =
       '<p class="modal-sub">' + (fixture.competition ? escapeHtml(fixture.competition) + ' · ' : '') +
@@ -323,106 +300,6 @@
   function closeModal() { el.modal.hidden = true; }
 
   // ============================================================
-  //  ICS / CALENDAR
-  // ============================================================
-
-  function pad(n) { return String(n).padStart(2, '0'); }
-
-  // Floating local time (no Z) so Apple/Google show it in the phone's local time.
-  function icsLocal(date, time) {
-    var d = new Date(date.getFullYear(), date.getMonth(), date.getDate(), time.h, time.m, 0);
-    return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + 'T' + pad(d.getHours()) + pad(d.getMinutes()) + '00';
-  }
-
-  function addMinutes(date, time, mins) {
-    var d = new Date(date.getFullYear(), date.getMonth(), date.getDate(), time.h, time.m, 0);
-    d.setMinutes(d.getMinutes() + mins);
-    return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + 'T' + pad(d.getHours()) + pad(d.getMinutes()) + '00';
-  }
-
-  function icsEscape(s) {
-    return String(s || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
-  }
-
-  function buildEvent(g) {
-    var f = g.fixture;
-    var opp = f.opposition && f.opposition !== '-' ? f.opposition : (f.competition || 'Curling');
-    var title = 'Curling: ' + opp + (f.competition && f.competition !== opp ? ' (' + f.competition + ')' : '');
-    var mates = teammates(f);
-    var desc = [];
-    if (f.competition) desc.push('Competition: ' + f.competition);
-    if (f.week) desc.push(f.week);
-    if (mates.length) desc.push('Team: ' + mates.join(', '));
-    desc.push('Falkirk Curling Club');
-    var uid = 'fcc-' + (f.date ? f.date.getTime() : 'nd') + '-' + f.col + '-' + (state.selectedPlayer || '').replace(/\W/g, '') + '@falkirkcurling';
-    var stamp = new Date();
-    var dtstamp = stamp.getUTCFullYear() + pad(stamp.getUTCMonth() + 1) + pad(stamp.getUTCDate()) + 'T' +
-                  pad(stamp.getUTCHours()) + pad(stamp.getUTCMinutes()) + pad(stamp.getUTCSeconds()) + 'Z';
-    return [
-      'BEGIN:VEVENT',
-      'UID:' + uid,
-      'DTSTAMP:' + dtstamp,
-      'DTSTART:' + icsLocal(f.date, f.time),
-      'DTEND:' + addMinutes(f.date, f.time, GAME_DURATION_MIN),
-      'SUMMARY:' + icsEscape(title),
-      'LOCATION:' + icsEscape(DEFAULT_LOCATION),
-      'DESCRIPTION:' + icsEscape(desc.join('\n')),
-      'BEGIN:VALARM',
-      'ACTION:DISPLAY',
-      'DESCRIPTION:' + icsEscape(title),
-      'TRIGGER:-PT3H',
-      'END:VALARM',
-      'END:VEVENT'
-    ].join('\r\n');
-  }
-
-  // Fold logical lines to <=75 chars (RFC 5545) so strict importers accept the file.
-  function foldICS(str) {
-    return str.split('\r\n').map(function (line) {
-      if (line.length <= 75) return line;
-      var out = line.slice(0, 75);
-      var rest = line.slice(75);
-      while (rest.length > 74) { out += '\r\n ' + rest.slice(0, 74); rest = rest.slice(74); }
-      return out + '\r\n ' + rest;
-    }).join('\r\n');
-  }
-
-  function buildCalendar(games) {
-    var events = games
-      .filter(function (g) { return g.info.playing && g.fixture.date && g.fixture.time; })
-      .map(buildEvent);
-    var cal = [
-      'BEGIN:VCALENDAR',
-      'VERSION:2.0',
-      'PRODID:-//Falkirk Curling Club//Fixtures//EN',
-      'CALSCALE:GREGORIAN',
-      'METHOD:PUBLISH',
-      'X-WR-CALNAME:Falkirk Curling - ' + (state.selectedPlayer || 'Fixtures')
-    ].concat(events).concat(['END:VCALENDAR']).join('\r\n');
-    return foldICS(cal);
-  }
-
-  function icsFileName(g) {
-    var f = g.fixture;
-    var opp = (f.opposition || 'curling').replace(/[^\w]+/g, '-').toLowerCase();
-    var d = f.date ? f.date.getFullYear() + pad(f.date.getMonth() + 1) + pad(f.date.getDate()) : 'game';
-    return 'curling-' + d + '-' + opp + '.ics';
-  }
-
-  function downloadICS(games, filename) {
-    var ics = buildCalendar(games);
-    var blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
-  }
-
-  // ============================================================
   //  FILE HANDLING
   // ============================================================
 
@@ -434,13 +311,15 @@
       try {
         var data = new Uint8Array(e.target.result);
         var wb = XLSX.read(data, { type: 'array', cellDates: true });
-        var model = FCCParser.parseWorkbook(wb);
-        state.fixtures = model.fixtures;
-        state.players = model.players;
-        state.meta = { fileName: file.name, season: model.season };
-        // Preserve previously selected player if still present
-        if (state.selectedPlayer && !playerObj()) state.selectedPlayer = null;
-        if (!state.selectedPlayer) state.selectedPlayer = guessPlayer(model.players);
+        var parsed = FCCParser.parseWorkbook(wb);
+        state.fixtures = parsed.fixtures;
+        state.players = parsed.players;
+        state.meta = { fileName: file.name, season: parsed.season };
+        // Preserve previously selected player if still present.
+        if (state.selectedPlayer && !FCCFixtures.findPlayer(model(), state.selectedPlayer)) {
+          state.selectedPlayer = null;
+        }
+        if (!state.selectedPlayer) state.selectedPlayer = guessPlayer(parsed.players);
         save();
         render();
       } catch (err) {
@@ -456,7 +335,7 @@
     reader.readAsArrayBuffer(file);
   }
 
-  // Best-effort default: match this device's user if we can, else none.
+  // Best-effort default: reuse the remembered player if present in this rota.
   function guessPlayer(players) {
     var stored = localStorage.getItem(PLAYER_KEY);
     if (stored && players.some(function (p) { return p.name === stored; })) return stored;
@@ -466,12 +345,6 @@
   // ============================================================
   //  EVENTS
   // ============================================================
-
-  function escapeHtml(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
 
   function wireEvents() {
     el.dropzone.addEventListener('click', function () { el.fileInput.click(); });
@@ -507,8 +380,8 @@
     });
 
     el.addAllBtn.addEventListener('click', function () {
-      var games = playerGames().filter(function (g) { return g.info.playing; });
-      downloadICS(games, 'falkirk-curling-' + (state.selectedPlayer || 'fixtures').replace(/\W+/g, '-').toLowerCase() + '.ics');
+      var games = currentGames().filter(function (g) { return g.info.playing; });
+      exportCalendar(games, 'falkirk-curling-' + (state.selectedPlayer || 'fixtures').replace(/\W+/g, '-').toLowerCase() + '.ics');
     });
 
     el.modal.addEventListener('click', function (e) {
@@ -528,7 +401,6 @@
     }
     wireEvents();
     if (load()) {
-      // restore filter chips state
       Array.prototype.forEach.call(el.filterChips.querySelectorAll('.chip'), function (btn) {
         btn.classList.toggle('active', !!state.filters[btn.getAttribute('data-filter')]);
       });

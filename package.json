@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "Upload the season rota spreadsheet and see which curling games you're playing — with one-tap calendar export.",
   "scripts": {
-    "test": "node test-parse.js",
+    "test": "node --test",
+    "test:integration": "node test-parse.js",
     "start": "npx --yes http-server -p 4178 -c-1 ."
   },
   "repository": {
