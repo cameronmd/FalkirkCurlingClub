@@ -3,7 +3,13 @@
  * Expects a SheetJS workbook read with { cellDates: true }.
  */
 (function (root, factory) {
-  var XLSXlib = (typeof XLSX !== 'undefined') ? XLSX : (typeof require !== 'undefined' ? require('xlsx') : null);
+  // Prefer a global XLSX (browser CDN). Fall back to an optional require('xlsx')
+  // in Node, but don't hard-fail if it's absent — only parseWorkbook needs it,
+  // so buildModel/helpers stay usable (and unit-testable) without the library.
+  var XLSXlib = (typeof XLSX !== 'undefined') ? XLSX : null;
+  if (!XLSXlib && typeof require !== 'undefined') {
+    try { XLSXlib = require('xlsx'); } catch (e) { XLSXlib = null; }
+  }
   var api = factory(XLSXlib);
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.FCCParser = api;
@@ -131,6 +137,9 @@
   }
 
   function parseWorkbook(wb) {
+    if (!XLSX || !XLSX.utils) {
+      throw new Error('Spreadsheet library (xlsx) is not available.');
+    }
     var candidates = [];
     wb.SheetNames.forEach(function (name) {
       var aoa = sheetToAoA(wb.Sheets[name]);
