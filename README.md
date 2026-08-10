@@ -180,8 +180,8 @@ If a season's rota is updated, re-upload it and re-export — events use stable 
 
 ## Notes & assumptions
 
-- **Location** on calendar events defaults to _Falkirk Curling Club_. Home/away isn't recorded in the rota, so double-check the venue for away games. (Configurable in `CAL_OPTS` at the top of [`app.js`](app.js).)
-- **Game length** is assumed to be 2 hours for the calendar block — adjust the event afterwards if needed. (Also in `CAL_OPTS`.)
+- **Location** on calendar events defaults to _The Peak, Stirling_ (the home ice), with a tappable Google Maps link in the event notes. Home/away isn't recorded in the rota, so double-check the venue for away games. (Configurable via `CAL_OPTS` at the top of [`app.js`](app.js).)
+- **Game length** is 2 hours for the calendar block — adjust the event afterwards if needed. (Also in `CAL_OPTS`.)
 - **Reminder** defaults to 3 hours before the game.
 - **Internet on first load** is needed to fetch the SheetJS library from its CDN (you'd have it anyway to open a hosted page). It could be vendored into the repo for full offline use if ever wanted.
 

@@ -14,7 +14,8 @@
   'use strict';
 
   var DEFAULTS = {
-    location: 'Falkirk Curling Club',
+    location: 'The Peak, Stirling',
+    locationUrl: 'https://maps.app.goo.gl/J6bCU8uT9ptG5qUh6',
     durationMin: 120,
     alarmHours: 3,
     playerName: 'Fixtures',
@@ -71,6 +72,7 @@
   function buildEvent(game, opts) {
     opts = opts || {};
     var loc = opts.location || DEFAULTS.location;
+    var locUrl = opts.locationUrl == null ? DEFAULTS.locationUrl : opts.locationUrl;
     var durationMin = opts.durationMin || DEFAULTS.durationMin;
     var alarmHours = opts.alarmHours == null ? DEFAULTS.alarmHours : opts.alarmHours;
     var playerName = opts.playerName || DEFAULTS.playerName;
@@ -84,6 +86,7 @@
     if (f.week) desc.push(f.week);
     if (mates.length) desc.push('Team: ' + mates.join(', '));
     desc.push('Falkirk Curling Club');
+    if (locUrl) desc.push('Map: ' + locUrl);
 
     var uid = 'fcc-' + (f.date ? f.date.getTime() : 'nd') + '-' + f.col + '-' +
               String(playerName).replace(/\W/g, '') + '@falkirkcurling';
@@ -98,6 +101,7 @@
       'LOCATION:' + icsEscape(loc),
       'DESCRIPTION:' + icsEscape(desc.join('\n'))
     ];
+    if (locUrl) lines.push('URL:' + locUrl);
     if (alarmHours > 0) {
       lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + icsEscape(title),
                  'TRIGGER:-PT' + alarmHours + 'H', 'END:VALARM');

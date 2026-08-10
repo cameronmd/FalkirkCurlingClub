@@ -9,7 +9,12 @@
   // ---------- Config ----------
   var STORAGE_KEY = 'fcc_rota_v1';
   var PLAYER_KEY = 'fcc_player_v1';
-  var CAL_OPTS = { location: 'Falkirk Curling Club', durationMin: 120, alarmHours: 3 };
+  var CAL_OPTS = {
+    location: 'The Peak, Stirling',
+    locationUrl: 'https://maps.app.goo.gl/J6bCU8uT9ptG5qUh6',
+    durationMin: 120,   // every game is assumed 2 hours
+    alarmHours: 3
+  };
 
   // ---------- State ----------
   var state = {
@@ -97,6 +102,7 @@
     var ics = FCCCalendar.buildCalendar(withMates, {
       playerName: state.selectedPlayer || 'Fixtures',
       location: CAL_OPTS.location,
+      locationUrl: CAL_OPTS.locationUrl,
       durationMin: CAL_OPTS.durationMin,
       alarmHours: CAL_OPTS.alarmHours
     });

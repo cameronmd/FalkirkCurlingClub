@@ -56,10 +56,24 @@ test('buildEvent: core fields, 2h default duration, alarm', () => {
   assert.match(ics, /SUMMARY:Curling: Dunblane \(Small Clubs\)/);
   assert.match(ics, /DTSTART:20260908T203000/);
   assert.match(ics, /DTEND:20260908T223000/);      // +120 min
-  assert.match(ics, /LOCATION:Falkirk Curling Club/);
+  assert.match(ics, /LOCATION:The Peak\\, Stirling/); // comma escaped per RFC 5545
   assert.match(ics, /DTSTAMP:20260102T030405Z/);
   assert.match(ics, /BEGIN:VALARM[\s\S]*TRIGGER:-PT3H[\s\S]*END:VALARM/);
   assert.match(ics, /UID:fcc-\d+-1-Cameron@falkirkcurling/);
+});
+
+test('buildEvent: default location is The Peak and includes a tappable map link', () => {
+  const ics = C.buildEvent(game(), { now: FIXED_NOW });
+  assert.match(ics, /LOCATION:The Peak\\, Stirling/);
+  assert.match(ics, /URL:https:\/\/maps\.app\.goo\.gl\/J6bCU8uT9ptG5qUh6/);
+  assert.match(ics, /Map: https:\/\/maps\.app\.goo\.gl\/J6bCU8uT9ptG5qUh6/);
+});
+
+test('buildEvent: location and map link are overridable', () => {
+  const ics = C.buildEvent(game(), { location: 'Somewhere Else', locationUrl: '', now: FIXED_NOW });
+  assert.match(ics, /LOCATION:Somewhere Else/);
+  assert.doesNotMatch(ics, /URL:/);
+  assert.doesNotMatch(ics, /Map:/);
 });
 
 test('buildEvent: custom duration and alarm, teammates in description', () => {
