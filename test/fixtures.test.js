@@ -96,6 +96,23 @@ test('playerGames: unknown player yields no games', () => {
   assert.deepEqual(F.playerGames(makeModel(), 'Ghost', {}, null), []);
 });
 
+test('allFixtureGames returns every fixture, marked playing, sorted by date', () => {
+  const m = makeModel();
+  const games = F.allFixtureGames(m, {}, null);
+  assert.equal(games.length, m.fixtures.length);
+  assert.ok(games.every(g => g.info.playing));
+  const cols = games.map(g => g.fixture.col);
+  // col4 (Sep 6) sorts first, then col1 (Sep 8), col2 (Sep 9), col3 (Sep 14)
+  assert.deepEqual(cols, [4, 1, 2, 3]);
+});
+
+test('allFixtureGames respects hidepast', () => {
+  const m = makeModel();
+  const today = new Date(2026, 8, 10);
+  const games = F.allFixtureGames(m, { hidepast: true }, today);
+  assert.deepEqual(games.map(g => g.fixture.col), [3]); // only Sep 14 survives
+});
+
 test('nextGame returns the first upcoming played game', () => {
   const m = makeModel();
   const today = new Date(2026, 8, 10);

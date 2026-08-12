@@ -71,6 +71,26 @@
     return games;
   }
 
+  // Every fixture as a game (no per-player filter) for the "all fixtures" view.
+  // Each is treated as playing so it can be counted and exported.
+  function allFixtureGames(model, filters, today) {
+    filters = filters || {};
+    var games = model.fixtures
+      .filter(function (f) {
+        if (filters.hidepast && today && f.date && f.date < today) return false;
+        return true;
+      })
+      .map(function (f) {
+        return { fixture: f, info: { status: 'playing', label: 'Fixture', playing: true } };
+      });
+    games.sort(function (a, b) {
+      var da = a.fixture.date ? a.fixture.date.getTime() : Infinity;
+      var db = b.fixture.date ? b.fixture.date.getTime() : Infinity;
+      return da - db;
+    });
+    return games;
+  }
+
   // First upcoming game the player is actually playing (>= today), or null.
   function nextGame(model, playerName, today) {
     var playing = playerGames(model, playerName, { playing: true }, null)
@@ -84,6 +104,7 @@
     findPlayer: findPlayer,
     teammates: teammates,
     playerGames: playerGames,
+    allFixtureGames: allFixtureGames,
     nextGame: nextGame
   };
 });

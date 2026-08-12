@@ -33,8 +33,12 @@ No more pinch-zooming across a giant grid to find your name.
 
 ### Nice extras
 
+- **Works offline & installable (PWA).** After the first visit it runs with no connection, and can be added to your home screen as an app.
 - **Runs entirely in your browser.** The spreadsheet is read on your device and never uploaded anywhere.
 - **Remembers** your uploaded rota and your name, so next time you just open it and your games are there.
+- **View everyone** — pick _Everyone — all fixtures_ to browse the whole club schedule without filtering to one person.
+- **Share** — send the whole rota as a link (others open it ready to go, no spreadsheet needed), or share the fixtures on screen as text.
+- **Calendar settings** — adjust location, map link, game length and reminder before adding to your calendar.
 - **Team view** — tap _Team_ on any game to see who else from the club is playing that day (you're highlighted).
 - **Filters** — show/hide games you're marked _N/A_ for, and hide games that have already passed.
 - **Next game** shown at a glance.
@@ -83,9 +87,16 @@ Plain HTML/CSS/vanilla JS — **no framework, no build step**. Logic is split in
 | `index.html`    | Page structure, loads scripts                                         |  —    |
 | `styles.css`    | Mobile-first styling                                                  |  —    |
 | `parser.js`     | Spreadsheet → data model (fixtures + players + markers)               |  ✅   |
-| `fixtures.js`   | Marker meaning, per-player game filtering/sorting, teammates          |  ✅   |
+| `fixtures.js`   | Marker meaning, per-player filtering/sorting, all-fixtures, teammates |  ✅   |
 | `calendar.js`   | `.ics` generation (RFC 5545: floating local time, folding, VALARM)    |  ✅   |
-| `app.js`        | UI glue — DOM rendering, events, persistence, file handling           |  —    |
+| `share.js`      | Rota serialize/deserialize (for share links) + text formatting        |  ✅   |
+| `app.js`        | UI glue — DOM, events, persistence, settings, share links, files      |  —    |
+| `sw.js`         | Service worker — offline app-shell cache                             |  —    |
+| `manifest.webmanifest` | PWA manifest (name, icons, theme)                            |  —    |
+
+The spreadsheet library ([SheetJS](https://sheetjs.com/)) is vendored in `vendor/` so the app works offline.
+
+**Share links** encode the whole rota into the URL fragment (`#d=…`): the model is serialized (`share.js`), gzip-compressed via the browser's `CompressionStream`, and base64url-encoded. Opening such a link decodes it back and loads the rota with no spreadsheet needed. Nothing is sent to a server — the data lives entirely in the link.
 
 ```
  spreadsheet ──▶ parser.js ──▶ model ──▶ fixtures.js ──▶ games ──▶ app.js ──▶ DOM
@@ -93,7 +104,7 @@ Plain HTML/CSS/vanilla JS — **no framework, no build step**. Logic is split in
                                             └────────────────────────┴──▶ calendar.js ──▶ .ics
 ```
 
-Each pure module uses a small UMD wrapper: it attaches to `window` in the browser (`FCCParser`, `FCCFixtures`, `FCCCalendar`) and exports via `module.exports` under Node. The spreadsheet library ([SheetJS](https://sheetjs.com/)) is loaded from a CDN in `index.html`.
+Each pure module uses a small UMD wrapper: it attaches to `window` in the browser (`FCCParser`, `FCCFixtures`, `FCCCalendar`, `FCCShare`) and exports via `module.exports` under Node.
 
 **Data model** (produced by `parser.js`):
 
@@ -137,8 +148,9 @@ npm test           # runs node --test over the test/ folder
 Covers:
 
 - **`test/parser.test.js`** — header-row detection, fixture/column extraction, summary & spacer-column exclusion, date parsing (real dates, `dd/mm`, `11 Mar` + year inference), time parsing, player-row boundaries, legend exclusion.
-- **`test/fixtures.test.js`** — marker mapping, filtering (playing / N/A / hide-past), date sorting, teammates, next game.
-- **`test/calendar.test.js`** — title formatting, ICS escaping, floating-local-time output, RFC 5545 line folding, event fields (duration, alarm, UID, teammates), calendar wrapping/filtering, CRLF endings, filenames.
+- **`test/fixtures.test.js`** — marker mapping, filtering (playing / N/A / hide-past), all-fixtures mode, date sorting, teammates, next game.
+- **`test/calendar.test.js`** — title formatting, ICS escaping, floating-local-time output, RFC 5545 line folding, event fields (duration, alarm, location, map link, UID, teammates), calendar wrapping/filtering, CRLF endings, filenames.
+- **`test/share.test.js`** — rota serialize/deserialize round-trip, malformed-data handling, and fixture-list text formatting.
 
 There's also an **optional integration test** that runs the parser against a real spreadsheet:
 
@@ -183,7 +195,7 @@ If a season's rota is updated, re-upload it and re-export — events use stable 
 - **Location** on calendar events defaults to _The Peak, Stirling_ (the home ice), with a tappable Google Maps link in the event notes. Home/away isn't recorded in the rota, so double-check the venue for away games. (Configurable via `CAL_OPTS` at the top of [`app.js`](app.js).)
 - **Game length** is 2 hours for the calendar block — adjust the event afterwards if needed. (Also in `CAL_OPTS`.)
 - **Reminder** defaults to 3 hours before the game.
-- **Internet on first load** is needed to fetch the SheetJS library from its CDN (you'd have it anyway to open a hosted page). It could be vendored into the repo for full offline use if ever wanted.
+- **Offline:** the app (including the SheetJS library) is cached by a service worker after the first visit, so it opens without a connection. Share links and calendar export are generated on-device and also work offline.
 
 ## Licence
 

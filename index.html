@@ -5,9 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#0b3d61" />
   <title>Falkirk Curling Club — My Fixtures</title>
-  <meta name="description" content="Upload the season rota spreadsheet and instantly see which games you're playing. Add them to your calendar in one tap." />
+  <meta name="description" content="See which curling games you're playing and add them to your calendar in one tap." />
+
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="FCC Fixtures" />
+  <link rel="apple-touch-icon" href="icons/icon-180.png" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%230b3d61'/%3E%3Ccircle cx='50' cy='50' r='30' fill='none' stroke='%23fff' stroke-width='5'/%3E%3Ccircle cx='50' cy='50' r='16' fill='none' stroke='%23c0392b' stroke-width='5'/%3E%3Ccircle cx='50' cy='50' r='4' fill='%23fff'/%3E%3C/svg%3E" />
-  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%230b3d61'/%3E%3Ccircle cx='50' cy='50' r='30' fill='none' stroke='%23fff' stroke-width='5'/%3E%3Ccircle cx='50' cy='50' r='16' fill='none' stroke='%23c0392b' stroke-width='5'/%3E%3Ccircle cx='50' cy='50' r='4' fill='%23fff'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -20,7 +26,12 @@
           <p class="tagline">My Fixtures</p>
         </div>
       </div>
-      <button id="changeFileBtn" class="ghost-btn" hidden>Change rota</button>
+      <div class="header-actions">
+        <button id="settingsBtn" class="icon-btn" hidden aria-label="Calendar settings" title="Calendar settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 13a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 7 19.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0-1.2-2.9H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.7 7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H10a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V10a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
+        </button>
+        <button id="changeFileBtn" class="ghost-btn" hidden>Change rota</button>
+      </div>
     </div>
   </header>
 
@@ -40,9 +51,9 @@
     <!-- Controls -->
     <section id="controlsSection" class="controls" hidden>
       <div class="control-row">
-        <label for="playerSelect" class="control-label">Player</label>
+        <label for="playerSearch" class="control-label">Player</label>
         <div class="player-picker">
-          <input type="text" id="playerSearch" placeholder="Search your name…" autocomplete="off" />
+          <input type="text" id="playerSearch" placeholder="Search your name, or view everyone…" autocomplete="off" />
           <ul id="playerList" class="player-list" hidden></ul>
         </div>
       </div>
@@ -53,16 +64,22 @@
       </div>
     </section>
 
-    <!-- Summary + Add all -->
+    <!-- Summary + actions -->
     <section id="summarySection" class="summary" hidden>
       <div class="summary-stats">
         <div class="stat"><span id="statGames" class="stat-num">0</span><span class="stat-label">games</span></div>
         <div class="stat next-stat" id="nextStat" hidden><span class="stat-label">Next game</span><span id="statNext" class="stat-next">—</span></div>
       </div>
-      <button id="addAllBtn" class="primary-btn">
-        <svg viewBox="0 0 24 24" aria-hidden="true" class="btn-icon"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/></svg>
-        Add all to calendar
-      </button>
+      <div class="summary-actions">
+        <button id="shareBtn" class="ghost-btn light">
+          <svg viewBox="0 0 24 24" aria-hidden="true" class="btn-icon"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v14"/></svg>
+          Share
+        </button>
+        <button id="addAllBtn" class="primary-btn">
+          <svg viewBox="0 0 24 24" aria-hidden="true" class="btn-icon"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/></svg>
+          Add all to calendar
+        </button>
+      </div>
     </section>
 
     <!-- Games -->
@@ -84,10 +101,79 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Settings modal -->
+  <div id="settingsModal" class="modal" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <button class="modal-close" data-close aria-label="Close">&times;</button>
+      <h3 id="settingsTitle">Calendar settings</h3>
+      <div class="modal-body">
+        <p class="modal-sub">These apply to events you add to your calendar.</p>
+        <form id="settingsForm" class="settings-form">
+          <label class="fld"><span>Location</span>
+            <input type="text" id="setLocation" placeholder="The Peak, Stirling" />
+          </label>
+          <label class="fld"><span>Map link <em>(optional)</em></span>
+            <input type="url" id="setMapUrl" placeholder="https://maps.app.goo.gl/…" />
+          </label>
+          <label class="fld"><span>Game length</span>
+            <select id="setDuration">
+              <option value="60">1 hour</option>
+              <option value="90">1½ hours</option>
+              <option value="120">2 hours</option>
+              <option value="150">2½ hours</option>
+              <option value="180">3 hours</option>
+            </select>
+          </label>
+          <label class="fld"><span>Reminder</span>
+            <select id="setReminder">
+              <option value="0">No reminder</option>
+              <option value="1">1 hour before</option>
+              <option value="2">2 hours before</option>
+              <option value="3">3 hours before</option>
+              <option value="24">1 day before</option>
+            </select>
+          </label>
+          <div class="settings-actions">
+            <button type="button" class="ghost-btn dark" id="settingsReset">Reset to defaults</button>
+            <button type="submit" class="primary-btn solid">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Share modal -->
+  <div id="shareModal" class="modal" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
+      <button class="modal-close" data-close aria-label="Close">&times;</button>
+      <h3 id="shareTitle">Share</h3>
+      <div class="modal-body">
+        <p class="modal-sub">Send the whole rota as a link (others open it ready to go — no spreadsheet needed), or share the fixtures on screen as text.</p>
+        <button type="button" class="wide-btn" id="shareLinkBtn">
+          🔗 <span>Copy / share rota link</span>
+        </button>
+        <button type="button" class="wide-btn" id="shareTextBtn">
+          📋 <span>Share these fixtures as text</span>
+        </button>
+        <p id="shareStatus" class="share-status" hidden></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="vendor/xlsx.full.min.js"></script>
   <script src="parser.js"></script>
   <script src="fixtures.js"></script>
   <script src="calendar.js"></script>
+  <script src="share.js"></script>
   <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').catch(function () { /* offline unavailable — app still works online */ });
+      });
+    }
+  </script>
 </body>
 </html>

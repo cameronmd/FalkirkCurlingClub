@@ -51,11 +51,19 @@ html, body {
     #1a5a86;
   box-shadow: inset 0 -3px 6px rgba(0,0,0,.3);
 }
+.header-actions { display: flex; align-items: center; gap: 8px; }
 .ghost-btn {
   background: rgba(255,255,255,.14); color: #fff; border: 1px solid rgba(255,255,255,.3);
   padding: 7px 12px; border-radius: 20px; font-size: .82rem; cursor: pointer;
 }
 .ghost-btn:active { background: rgba(255,255,255,.28); }
+.icon-btn {
+  width: 38px; height: 38px; flex: 0 0 38px; display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.14); color: #fff; border: 1px solid rgba(255,255,255,.3);
+  border-radius: 50%; cursor: pointer;
+}
+.icon-btn:active { background: rgba(255,255,255,.28); }
+.icon-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
 main.wrap { padding-top: 18px; padding-bottom: 40px; }
 
@@ -103,6 +111,7 @@ main.wrap { padding-top: 18px; padding-bottom: 40px; }
 }
 .player-list li { padding: 11px 12px; border-radius: 8px; cursor: pointer; font-size: 1rem; }
 .player-list li:hover, .player-list li:focus { background: var(--ice); outline: none; }
+.player-list li.all-opt { font-weight: 700; color: var(--navy); border-bottom: 1px solid var(--ice-line); border-radius: 8px 8px 0 0; margin-bottom: 2px; }
 
 .filter-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .chip {
@@ -123,12 +132,20 @@ main.wrap { padding-top: 18px; padding-bottom: 40px; }
 .stat-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; opacity: .8; margin-top: 3px; }
 .next-stat { border-left: 1px solid rgba(255,255,255,.25); padding-left: 20px; }
 .stat-next { font-size: 1rem; font-weight: 700; margin-top: 4px; }
+.summary-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ghost-btn.light {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,.16); color: #fff; border: 1px solid rgba(255,255,255,.4);
+  padding: 11px 14px; border-radius: 24px; font-weight: 600; font-size: .9rem;
+}
+.ghost-btn.light .btn-icon { stroke: #fff; }
 .primary-btn {
   display: inline-flex; align-items: center; gap: 8px; background: #fff; color: var(--navy);
   border: none; padding: 12px 16px; border-radius: 24px; font-weight: 700; font-size: .95rem; cursor: pointer;
   box-shadow: 0 2px 8px rgba(0,0,0,.15);
 }
 .primary-btn:disabled { opacity: .5; cursor: not-allowed; }
+.primary-btn.solid { background: var(--navy); color: #fff; box-shadow: none; }
 .primary-btn:active:not(:disabled) { transform: translateY(1px); }
 .btn-icon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 
@@ -216,6 +233,31 @@ main.wrap { padding-top: 18px; padding-bottom: 40px; }
 }
 .mates-list li { padding: 10px 12px; border-radius: 8px; background: #f6fafd; font-size: .98rem; }
 .mates-list li.me { background: var(--navy); color: #fff; font-weight: 700; }
+
+/* Settings form */
+.settings-form { display: flex; flex-direction: column; gap: 14px; }
+.fld { display: flex; flex-direction: column; gap: 6px; font-size: .85rem; font-weight: 700; color: var(--navy); }
+.fld em { color: var(--grey); font-weight: 400; font-style: normal; }
+.fld input, .fld select {
+  padding: 11px 12px; border: 1px solid var(--ice-line); border-radius: 10px;
+  font-size: 1rem; background: #fff; color: var(--text); font-weight: 400; width: 100%;
+}
+.fld input:focus, .fld select:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px rgba(11,61,97,.15); }
+.settings-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 6px; }
+.ghost-btn.dark {
+  background: #fff; color: var(--navy); border: 1px solid var(--ice-line);
+  padding: 11px 14px; border-radius: 24px; font-weight: 600; font-size: .9rem; cursor: pointer;
+}
+
+/* Share options */
+.wide-btn {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  padding: 14px 16px; margin-bottom: 10px; border: 1px solid var(--ice-line); background: #fff;
+  border-radius: 12px; font-size: 1rem; font-weight: 600; color: var(--navy); cursor: pointer;
+}
+.wide-btn:hover { background: var(--ice); }
+.wide-btn:disabled { opacity: .5; cursor: not-allowed; }
+.share-status { text-align: center; color: var(--green); font-weight: 600; font-size: .9rem; margin: 6px 0 0; }
 
 .app-footer { text-align: center; color: var(--grey); font-size: .78rem; padding: 20px 16px 30px; }
 

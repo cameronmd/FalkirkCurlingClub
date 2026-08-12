@@ -53,7 +53,9 @@ jobs:
       - name: Stage static site
         run: |
           mkdir -p _site
-          cp index.html styles.css parser.js fixtures.js calendar.js app.js _site/
+          cp index.html styles.css parser.js fixtures.js calendar.js share.js app.js _site/
+          cp sw.js manifest.webmanifest _site/
+          cp -r vendor icons _site/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
