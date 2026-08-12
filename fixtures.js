@@ -61,6 +61,7 @@
         if (!filters.unavailable) return;
       }
       if (filters.hidepast && today && f.date && f.date < today) return;
+      if (filters.competition && f.competition !== filters.competition) return;
       games.push({ fixture: f, info: info });
     });
     games.sort(function (a, b) {
@@ -78,6 +79,7 @@
     var games = model.fixtures
       .filter(function (f) {
         if (filters.hidepast && today && f.date && f.date < today) return false;
+        if (filters.competition && f.competition !== filters.competition) return false;
         return true;
       })
       .map(function (f) {
@@ -89,6 +91,16 @@
       return da - db;
     });
     return games;
+  }
+
+  // Distinct competition names across all fixtures, sorted alphabetically.
+  function competitions(model) {
+    var seen = {};
+    model.fixtures.forEach(function (f) {
+      var c = (f.competition || '').trim();
+      if (c) seen[c] = true;
+    });
+    return Object.keys(seen).sort();
   }
 
   // First upcoming game the player is actually playing (>= today), or null.
@@ -105,6 +117,7 @@
     teammates: teammates,
     playerGames: playerGames,
     allFixtureGames: allFixtureGames,
+    competitions: competitions,
     nextGame: nextGame
   };
 });

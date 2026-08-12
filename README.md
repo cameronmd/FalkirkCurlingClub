@@ -36,7 +36,8 @@ No more pinch-zooming across a giant grid to find your name.
 - **Works offline & installable (PWA).** After the first visit it runs with no connection, and can be added to your home screen as an app.
 - **Runs entirely in your browser.** The spreadsheet is read on your device and never uploaded anywhere.
 - **Remembers** your uploaded rota and your name, so next time you just open it and your games are there.
-- **View everyone** — pick _Everyone — all fixtures_ to browse the whole club schedule without filtering to one person.
+- **View everyone** — opens on _Everyone — all fixtures_ (the whole club schedule) by default; pick your name to narrow it to your games.
+- **Filter by competition** — narrow to League, Small Clubs, Province KO, etc.; works alongside the player selection.
 - **Share** — send the whole rota as a link (others open it ready to go, no spreadsheet needed), or share the fixtures on screen as text.
 - **Calendar settings** — adjust location, map link, game length and reminder before adding to your calendar.
 - **Team view** — tap _Team_ on any game to see who else from the club is playing that day (you're highlighted).
@@ -195,7 +196,7 @@ If a season's rota is updated, re-upload it and re-export — events use stable 
 - **Location** on calendar events defaults to _The Peak, Stirling_ (the home ice), with a tappable Google Maps link in the event notes. Home/away isn't recorded in the rota, so double-check the venue for away games. (Configurable via `CAL_OPTS` at the top of [`app.js`](app.js).)
 - **Game length** is 2 hours for the calendar block — adjust the event afterwards if needed. (Also in `CAL_OPTS`.)
 - **Reminder** defaults to 3 hours before the game.
-- **Offline:** the app (including the SheetJS library) is cached by a service worker after the first visit, so it opens without a connection. Share links and calendar export are generated on-device and also work offline.
+- **Offline:** the app (including the SheetJS library) is cached by a service worker after the first visit, so it opens without a connection. It uses a *stale-while-revalidate* strategy — you get the cached copy instantly, and a fresh copy is fetched in the background so the next open is up to date. Share links and calendar export are generated on-device and also work offline.
 
 ## Licence
 

@@ -106,6 +106,27 @@ test('allFixtureGames returns every fixture, marked playing, sorted by date', ()
   assert.deepEqual(cols, [4, 1, 2, 3]);
 });
 
+test('competitions lists distinct names sorted', () => {
+  const m = makeModel();
+  assert.deepEqual(F.competitions(m), ['League', 'Opening Bonspiel', 'Small Clubs']);
+});
+
+test('playerGames filters by competition', () => {
+  const m = makeModel();
+  // Ferguson plays cols 1 (Small Clubs), 2 (Opening Bonspiel), 3 (League)
+  const league = F.playerGames(m, 'Ferguson I', { playing: true, competition: 'League' }, null);
+  assert.deepEqual(league.map(g => g.fixture.col), [3]);
+  const none = F.playerGames(m, 'Ferguson I', { playing: true, competition: 'Nope' }, null);
+  assert.equal(none.length, 0);
+});
+
+test('allFixtureGames filters by competition', () => {
+  const m = makeModel();
+  // cols 3 and 4 are both "League"; sorted by date col4 (Sep 6) precedes col3 (Sep 14)
+  const league = F.allFixtureGames(m, { competition: 'League' }, null);
+  assert.deepEqual(league.map(g => g.fixture.col), [4, 3]);
+});
+
 test('allFixtureGames respects hidepast', () => {
   const m = makeModel();
   const today = new Date(2026, 8, 10);

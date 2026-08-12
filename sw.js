@@ -2,7 +2,7 @@
  * Cache-first for the app's own files so it opens with no connection.
  * Bump CACHE when any shell file changes to invalidate the old cache.
  */
-var CACHE = 'fcc-v3';
+var CACHE = 'fcc-v4';
 
 // All same-origin files that make up the app shell. Relative paths so this
 // works both at the domain root and under /FalkirkCurlingClub/ on Pages.
@@ -44,19 +44,20 @@ self.addEventListener('fetch', function (e) {
   // Only handle same-origin requests; let anything else hit the network.
   if (new URL(req.url).origin !== self.location.origin) return;
 
+  // Stale-while-revalidate: serve the cached copy immediately (instant + works
+  // offline), but always fetch a fresh copy in the background so the next load
+  // is up to date. This avoids users getting stuck on a stale cached app.
   e.respondWith(
-    caches.match(req).then(function (cached) {
-      if (cached) return cached;
-      return fetch(req).then(function (res) {
-        // Runtime-cache successful same-origin GETs (e.g. first-seen assets).
-        if (res && res.status === 200 && res.type === 'basic') {
-          var copy = res.clone();
-          caches.open(CACHE).then(function (c) { c.put(req, copy); });
-        }
-        return res;
-      }).catch(function () {
-        // Offline navigation fallback → the app shell.
-        if (req.mode === 'navigate') return caches.match('index.html');
+    caches.open(CACHE).then(function (cache) {
+      return cache.match(req).then(function (cached) {
+        var network = fetch(req).then(function (res) {
+          if (res && res.status === 200 && res.type === 'basic') cache.put(req, res.clone());
+          return res;
+        }).catch(function () {
+          // Offline and not cached → fall back to the app shell for navigations.
+          return cached || (req.mode === 'navigate' ? cache.match('index.html') : undefined);
+        });
+        return cached || network;
       });
     })
   );
