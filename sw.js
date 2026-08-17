@@ -2,7 +2,7 @@
  * Cache-first for the app's own files so it opens with no connection.
  * Bump CACHE when any shell file changes to invalidate the old cache.
  */
-var CACHE = 'fcc-v4';
+var CACHE = 'fcc-v5';
 
 // All same-origin files that make up the app shell. Relative paths so this
 // works both at the domain root and under /FalkirkCurlingClub/ on Pages.

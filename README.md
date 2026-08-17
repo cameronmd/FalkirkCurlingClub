@@ -37,8 +37,10 @@ No more pinch-zooming across a giant grid to find your name.
 - **Runs entirely in your browser.** The spreadsheet is read on your device and never uploaded anywhere.
 - **Remembers** your uploaded rota and your name, so next time you just open it and your games are there.
 - **View everyone** — opens on _Everyone — all fixtures_ (the whole club schedule) by default; pick your name to narrow it to your games.
+- **This weekend spotlight** — in the all-fixtures view, the upcoming Saturday–Sunday games are pulled out at the top so you can see the weekend at a glance.
+- **Month dividers** — the list is grouped under sticky _September 2026_, _October 2026_… headers so a long season stays scannable.
 - **Filter by competition** — narrow to League, Small Clubs, Province KO, etc.; works alongside the player selection.
-- **Share** — send the whole rota as a link (others open it ready to go, no spreadsheet needed), or share the fixtures on screen as text.
+- **Share** — send the whole rota as a link (it even remembers whose view you were on, via a `#player=…` deep link), or share the fixtures on screen as text. Skips share straight to a name, e.g. `…/#player=Matheson-Dear%20C` or `…/#player=all`.
 - **Calendar settings** — adjust location, map link, game length and reminder before adding to your calendar.
 - **Team view** — tap _Team_ on any game to see who else from the club is playing that day (you're highlighted).
 - **Filters** — show/hide games you're marked _N/A_ for, and hide games that have already passed.
