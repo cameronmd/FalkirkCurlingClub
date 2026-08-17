@@ -27,7 +27,7 @@ No more pinch-zooming across a giant grid to find your name.
 ## What it does
 
 1. **Upload** the season rota spreadsheet (`.xlsx`) — the "Rota by Player" grid.
-2. **Pick your name** from the list.
+2. **Pick your name(s)** from the list — select several at once (handy for couples or friends who share a lift), or view everyone.
 3. **See your games** as clean cards, sorted by date: opposition, time, competition, and the week.
 4. **Add to your calendar** — a single game, or all of them at once, as a standard `.ics` file. On iPhone this opens Apple Calendar with an "Add All" prompt. Each event gets a 3-hour-before reminder and a 2-hour duration.
 
@@ -35,12 +35,12 @@ No more pinch-zooming across a giant grid to find your name.
 
 - **Works offline & installable (PWA).** After the first visit it runs with no connection, and can be added to your home screen as an app.
 - **Runs entirely in your browser.** The spreadsheet is read on your device and never uploaded anywhere.
-- **Remembers** your uploaded rota and your name, so next time you just open it and your games are there.
-- **View everyone** — opens on _Everyone — all fixtures_ (the whole club schedule) by default; pick your name to narrow it to your games.
-- **This weekend spotlight** — in the all-fixtures view, the upcoming Saturday–Sunday games are pulled out at the top so you can see the weekend at a glance.
+- **Remembers** your uploaded rota and your name(s), so next time you just open it and your games are there.
+- **Pick one or more players** — opens on _Everyone — all fixtures_ (the whole club schedule) by default; tap one or several names to narrow it. When more than one is picked, each game shows who of your selection is on.
+- **This weekend spotlight** — in the all-fixtures / multi-player views, the upcoming Saturday–Sunday games are pulled out at the top so you can see the weekend at a glance.
 - **Month dividers** — the list is grouped under sticky _September 2026_, _October 2026_… headers so a long season stays scannable.
-- **Filter by competition** — narrow to League, Small Clubs, Province KO, etc.; works alongside the player selection.
-- **Share** — send the whole rota as a link (it even remembers whose view you were on, via a `#player=…` deep link), or share the fixtures on screen as text. Skips share straight to a name, e.g. `…/#player=Matheson-Dear%20C` or `…/#player=all`.
+- **Filter by competition** — pick one or more of League, Small Clubs, Province KO, etc.; works alongside the player selection (none picked shows them all).
+- **Share** — send the whole rota as a link (it even remembers whose view you were on, via a `#player=…` deep link), or share the fixtures on screen as text. Links straight to a name, or several, e.g. `…/#player=Matheson-Dear%20C`, `…/#player=Smith%20A,Gray%20B` or `…/#player=all`.
 - **Calendar settings** — adjust location, map link, game length and reminder before adding to your calendar.
 - **Team view** — tap _Team_ on any game to see who else from the club is playing that day (you're highlighted).
 - **Filters** — show/hide games you're marked _N/A_ for, and hide games that have already passed.
@@ -198,7 +198,8 @@ If a season's rota is updated, re-upload it and re-export — events use stable 
 - **Location** on calendar events defaults to _The Peak, Stirling_ (the home ice), with a tappable Google Maps link in the event notes. Home/away isn't recorded in the rota, so double-check the venue for away games. (Configurable via `CAL_OPTS` at the top of [`app.js`](app.js).)
 - **Game length** is 2 hours for the calendar block — adjust the event afterwards if needed. (Also in `CAL_OPTS`.)
 - **Reminder** defaults to 3 hours before the game.
-- **Offline:** the app (including the SheetJS library) is cached by a service worker after the first visit, so it opens without a connection. It uses a *stale-while-revalidate* strategy — you get the cached copy instantly, and a fresh copy is fetched in the background so the next open is up to date. Share links and calendar export are generated on-device and also work offline.
+- **Offline:** the app (including the SheetJS library) is cached by a service worker after the first visit, so it opens without a connection. It uses a *network-first* strategy — when you're online it always loads the freshest files (so an update shows on the very next refresh), and only falls back to the cache when you're offline. Share links and calendar export are generated on-device and also work offline.
+- **The fixtures come from the club's rota spreadsheet.** If a date, time or opponent looks wrong, it's the spreadsheet that needs correcting — not this app. A footer note says as much; always double-check against official club communications.
 
 ## Licence
 

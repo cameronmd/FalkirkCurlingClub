@@ -1,8 +1,10 @@
 /* Service worker — offline app shell for Falkirk Curling Club fixtures.
- * Cache-first for the app's own files so it opens with no connection.
+ * Network-first: when online we always serve the freshest files (so a single
+ * refresh shows the latest app after a deploy), falling back to the cache only
+ * when offline. The cache is refreshed from every successful fetch.
  * Bump CACHE when any shell file changes to invalidate the old cache.
  */
-var CACHE = 'fcc-v5';
+var CACHE = 'fcc-v6';
 
 // All same-origin files that make up the app shell. Relative paths so this
 // works both at the domain root and under /FalkirkCurlingClub/ on Pages.
@@ -44,20 +46,21 @@ self.addEventListener('fetch', function (e) {
   // Only handle same-origin requests; let anything else hit the network.
   if (new URL(req.url).origin !== self.location.origin) return;
 
-  // Stale-while-revalidate: serve the cached copy immediately (instant + works
-  // offline), but always fetch a fresh copy in the background so the next load
-  // is up to date. This avoids users getting stuck on a stale cached app.
+  // Network-first: try the network, cache the fresh copy, and fall back to the
+  // cache (or the app shell for navigations) only when the network fails. This
+  // means a single refresh always shows the latest app when you're online.
   e.respondWith(
-    caches.open(CACHE).then(function (cache) {
-      return cache.match(req).then(function (cached) {
-        var network = fetch(req).then(function (res) {
-          if (res && res.status === 200 && res.type === 'basic') cache.put(req, res.clone());
-          return res;
-        }).catch(function () {
-          // Offline and not cached → fall back to the app shell for navigations.
+    fetch(req).then(function (res) {
+      if (res && res.status === 200 && res.type === 'basic') {
+        var copy = res.clone();
+        caches.open(CACHE).then(function (cache) { cache.put(req, copy); });
+      }
+      return res;
+    }).catch(function () {
+      return caches.open(CACHE).then(function (cache) {
+        return cache.match(req).then(function (cached) {
           return cached || (req.mode === 'navigate' ? cache.match('index.html') : undefined);
         });
-        return cached || network;
       });
     })
   );

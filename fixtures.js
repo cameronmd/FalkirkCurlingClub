@@ -42,8 +42,29 @@
     }).map(function (p) { return p.name; });
   }
 
+  function byDate(a, b) {
+    var da = a.fixture.date ? a.fixture.date.getTime() : Infinity;
+    var db = b.fixture.date ? b.fixture.date.getTime() : Infinity;
+    return da - db;
+  }
+
+  // Competition filter — accepts either the new `competitions` array (multi-
+  // select; empty/absent means "all") or the legacy single `competition` string.
+  function passesCompetition(f, filters) {
+    var list = filters.competitions;
+    if ((!list || !list.length) && filters.competition) list = [filters.competition];
+    if (!list || !list.length) return true;
+    return list.indexOf(f.competition) !== -1;
+  }
+
+  function passesCommon(f, filters, today) {
+    if (filters.hidepast && today && f.date && f.date < today) return false;
+    if (!passesCompetition(f, filters)) return false;
+    return true;
+  }
+
   // Games for a player, filtered and sorted by date.
-  // filters: { playing, unavailable, hidepast }; today: Date (start of day).
+  // filters: { playing, unavailable, hidepast, competitions[] }; today: Date.
   function playerGames(model, playerName, filters, today) {
     var p = findPlayer(model, playerName);
     if (!p) return [];
@@ -60,15 +81,42 @@
         // behind the "unavailable" filter.
         if (!filters.unavailable) return;
       }
-      if (filters.hidepast && today && f.date && f.date < today) return;
-      if (filters.competition && f.competition !== filters.competition) return;
+      if (!passesCommon(f, filters, today)) return;
       games.push({ fixture: f, info: info });
     });
-    games.sort(function (a, b) {
-      var da = a.fixture.date ? a.fixture.date.getTime() : Infinity;
-      var db = b.fixture.date ? b.fixture.date.getTime() : Infinity;
-      return da - db;
+    games.sort(byDate);
+    return games;
+  }
+
+  // Games for a set of players, merged so each fixture appears once (the
+  // "favourites" view). A fixture is included if at least one selected player
+  // has a marker there; it counts as playing if any of them is playing. `who`
+  // lists the selected players actually playing that fixture.
+  function playersGames(model, names, filters, today) {
+    filters = filters || {};
+    var set = {};
+    (names || []).forEach(function (n) { set[n] = true; });
+    var selected = model.players.filter(function (p) { return set[p.name]; });
+    var games = [];
+    model.fixtures.forEach(function (f) {
+      if (!passesCommon(f, filters, today)) return;
+      var anyMarker = false, whoPlaying = [];
+      selected.forEach(function (p) {
+        var raw = p.markers[f.col];
+        if (raw === undefined || raw === null || raw === '') return;
+        anyMarker = true;
+        if (markerInfo(raw).playing) whoPlaying.push(p.name);
+      });
+      if (!anyMarker) return;
+      if (whoPlaying.length) {
+        if (filters.playing === false) return;
+        games.push({ fixture: f, info: { status: 'playing', label: 'Playing', playing: true }, who: whoPlaying });
+      } else {
+        if (!filters.unavailable) return;
+        games.push({ fixture: f, info: { status: 'unavailable', label: 'Not available', playing: false }, who: [] });
+      }
     });
+    games.sort(byDate);
     return games;
   }
 
@@ -77,19 +125,11 @@
   function allFixtureGames(model, filters, today) {
     filters = filters || {};
     var games = model.fixtures
-      .filter(function (f) {
-        if (filters.hidepast && today && f.date && f.date < today) return false;
-        if (filters.competition && f.competition !== filters.competition) return false;
-        return true;
-      })
+      .filter(function (f) { return passesCommon(f, filters, today); })
       .map(function (f) {
         return { fixture: f, info: { status: 'playing', label: 'Fixture', playing: true } };
       });
-    games.sort(function (a, b) {
-      var da = a.fixture.date ? a.fixture.date.getTime() : Infinity;
-      var db = b.fixture.date ? b.fixture.date.getTime() : Infinity;
-      return da - db;
-    });
+    games.sort(byDate);
     return games;
   }
 
@@ -116,6 +156,7 @@
     findPlayer: findPlayer,
     teammates: teammates,
     playerGames: playerGames,
+    playersGames: playersGames,
     allFixtureGames: allFixtureGames,
     competitions: competitions,
     nextGame: nextGame
