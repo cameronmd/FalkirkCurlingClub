@@ -134,6 +134,49 @@ test('allFixtureGames respects hidepast', () => {
   assert.deepEqual(games.map(g => g.fixture.col), [3]); // only Sep 14 survives
 });
 
+test('playerGames filters by competitions array (multi-select)', () => {
+  const m = makeModel();
+  // Ferguson plays cols 1 (Small Clubs), 2 (Opening Bonspiel), 3 (League)
+  const two = F.playerGames(m, 'Ferguson I', { playing: true, competitions: ['League', 'Small Clubs'] }, null);
+  assert.deepEqual(two.map(g => g.fixture.col).sort(), [1, 3]);
+  // Empty array means "all"
+  const all = F.playerGames(m, 'Ferguson I', { playing: true, competitions: [] }, null);
+  assert.deepEqual(all.map(g => g.fixture.col).sort(), [1, 2, 3]);
+});
+
+test('allFixtureGames filters by competitions array', () => {
+  const m = makeModel();
+  const games = F.allFixtureGames(m, { competitions: ['Small Clubs', 'Opening Bonspiel'] }, null);
+  assert.deepEqual(games.map(g => g.fixture.col).sort(), [1, 2]);
+});
+
+test('playersGames merges games across selected players, once each', () => {
+  const m = makeModel();
+  // Ferguson: cols 1,2,3 (all x). Gray: cols 1 (x), 4 (x). Union playing = 1,2,3,4.
+  const games = F.playersGames(m, ['Ferguson I', 'Gray A'], { playing: true }, null);
+  assert.deepEqual(games.map(g => g.fixture.col), [4, 1, 2, 3]); // sorted by date
+  assert.ok(games.every(g => g.info.playing));
+  // col1 is played by both selected players
+  const col1 = games.find(g => g.fixture.col === 1);
+  assert.deepEqual(col1.who.sort(), ['Ferguson I', 'Gray A']);
+});
+
+test('playersGames: a fixture is "playing" if any selected player plays it', () => {
+  const m = makeModel();
+  // Cameron: col2 x, col3 n/a. Gray: col4 x. col3 has no playing selected player.
+  const playingOnly = F.playersGames(m, ['Cameron', 'Gray A'], { playing: true, unavailable: false }, null);
+  // Cameron plays col2; Gray plays cols 1 and 4
+  assert.deepEqual(playingOnly.map(g => g.fixture.col).sort(), [1, 2, 4]);
+  // With unavailable on, col3 (Cameron n/a) appears as unavailable
+  const withNa = F.playersGames(m, ['Cameron', 'Gray A'], { playing: true, unavailable: true }, null);
+  const col3 = withNa.find(g => g.fixture.col === 3);
+  assert.equal(col3.info.status, 'unavailable');
+});
+
+test('playersGames: empty selection yields no games', () => {
+  assert.deepEqual(F.playersGames(makeModel(), [], { playing: true }, null), []);
+});
+
 test('nextGame returns the first upcoming played game', () => {
   const m = makeModel();
   const today = new Date(2026, 8, 10);
