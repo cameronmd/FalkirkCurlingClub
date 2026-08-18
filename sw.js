@@ -4,7 +4,7 @@
  * when offline. The cache is refreshed from every successful fetch.
  * Bump CACHE when any shell file changes to invalidate the old cache.
  */
-var CACHE = 'fcc-v6';
+var CACHE = 'fcc-v7';
 
 // All same-origin files that make up the app shell. Relative paths so this
 // works both at the domain root and under /FalkirkCurlingClub/ on Pages.

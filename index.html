@@ -181,8 +181,23 @@
   <script src="app.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
+      // If a service worker is already controlling this page, a later change of
+      // controller means a new version has activated — reload once so the page,
+      // its scripts and styles all come from the same (fresh) version. This
+      // avoids a stale index.html running a newer app.js (or vice versa) after
+      // a deploy, which used to leave the app unable to load the rota.
+      if (navigator.serviceWorker.controller) {
+        var fccReloading = false;
+        navigator.serviceWorker.addEventListener('controllerchange', function () {
+          if (fccReloading) return;
+          fccReloading = true;
+          location.reload();
+        });
+      }
       window.addEventListener('load', function () {
-        navigator.serviceWorker.register('sw.js').catch(function () { /* offline unavailable — app still works online */ });
+        navigator.serviceWorker.register('sw.js').then(function (reg) {
+          if (reg && reg.update) { try { reg.update(); } catch (e) {} }
+        }).catch(function () { /* offline unavailable — app still works online */ });
       });
     }
   </script>

@@ -903,24 +903,59 @@
   //  INIT
   // ============================================================
 
+  // If the app throws while starting up — most likely because a stale service
+  // worker served an index.html and app.js from different versions, so an
+  // expected element is missing — clear the caches + service worker and reload
+  // once so everything comes back fresh and matched. Guarded so it can only
+  // self-heal once per tab (no reload loops).
+  function recoverFromStaleShell(err) {
+    if (window.console && console.error) console.error('Startup failed; attempting recovery.', err);
+    try {
+      if (sessionStorage.getItem('fcc_selfheal')) return; // already tried this tab
+      sessionStorage.setItem('fcc_selfheal', '1');
+    } catch (e) { return; }
+    var reload = function () { try { location.reload(); } catch (e) {} };
+    var jobs = [];
+    try {
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+        jobs.push(navigator.serviceWorker.getRegistrations().then(function (regs) {
+          return Promise.all(regs.map(function (r) { return r.unregister(); }));
+        }));
+      }
+      if (window.caches && caches.keys) {
+        jobs.push(caches.keys().then(function (keys) {
+          return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+        }));
+      }
+    } catch (e) { /* ignore */ }
+    Promise.all(jobs).then(reload, reload);
+    setTimeout(reload, 1500); // fallback if the clears hang
+  }
+
   function init() {
-    if (typeof XLSX === 'undefined') {
-      el.parseError.hidden = false;
-      el.parseError.textContent = '⚠️ Could not load the spreadsheet library. Try refreshing.';
+    try {
+      if (typeof XLSX === 'undefined') {
+        el.parseError.hidden = false;
+        el.parseError.textContent = '⚠️ Could not load the spreadsheet library. Try refreshing.';
+      }
+      wireEvents();
+      loadSettings();
+      Array.prototype.forEach.call(el.filterChips.querySelectorAll('.chip'), function (btn) {
+        btn.classList.toggle('active', !!state.filters[btn.getAttribute('data-filter')]);
+      });
+      // Capture the hash before loadFromHash clears any #d= share payload.
+      var rawHash = location.hash;
+      loadFromHash().then(function (fromLink) {
+        if (!fromLink) load();
+        applyDefaultSelection();    // remembered player(s), or "Everyone"
+        applyPlayerHash(rawHash);   // #player=… deep link overrides
+        render();
+        // Startup succeeded — allow future self-heals if a later reload needs one.
+        try { sessionStorage.removeItem('fcc_selfheal'); } catch (e) {}
+      }).catch(function (e) { recoverFromStaleShell(e); });
+    } catch (e) {
+      recoverFromStaleShell(e);
     }
-    wireEvents();
-    loadSettings();
-    Array.prototype.forEach.call(el.filterChips.querySelectorAll('.chip'), function (btn) {
-      btn.classList.toggle('active', !!state.filters[btn.getAttribute('data-filter')]);
-    });
-    // Capture the hash before loadFromHash clears any #d= share payload.
-    var rawHash = location.hash;
-    loadFromHash().then(function (fromLink) {
-      if (!fromLink) load();
-      applyDefaultSelection();    // remembered player(s), or "Everyone"
-      applyPlayerHash(rawHash);   // #player=… deep link overrides
-      render();
-    });
   }
 
   document.addEventListener('DOMContentLoaded', init);
